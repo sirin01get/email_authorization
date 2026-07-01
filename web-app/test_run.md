@@ -9,8 +9,8 @@ Commit before this run: `2ae6193`
 Environment:
 
 - Browser QA via local Chrome where available.
-- Supabase config currently uses placeholders.
-- Live magic-link email cannot be fully tested until real public Supabase values and redirect URLs are set.
+- Supabase config has public project values.
+- Live magic-link email was not re-sent during automated QA; success behavior was verified with a mocked Supabase response to avoid sending another email.
 
 ## UI Screenshots
 
@@ -25,5 +25,6 @@ Environment:
 | TC-001 | JavaScript Syntax | Pass | `node --check web-app\app.js` exited successfully. | Worker syntax was also checked with `node --check cloudflare-worker\src\index.js`. |
 | TC-002 | Guest Landing Page | Pass | Browser screenshots saved in `test-artifacts/`; desktop and mobile had no horizontal overflow. | Chrome rendered the local static page. |
 | TC-003 | Join Form Opens | Pass | Clicked `Join in`; Join panel became visible on desktop and mobile. | Email input was fillable on desktop. |
-| TC-004 | Missing Config Is Safe | Pass | Submitting with placeholder config showed: `Add your Supabase URL and public key in config.js before sending links.` | No page errors were reported. |
-| TC-005 | Live Magic Link | Fail | Requires real Supabase public config and redirect URL. | Cannot pass in this local placeholder state. |
+| TC-004 | Join Form Success Closes Popup | Pass | Mocked successful Supabase response; popup closed after 1.5 seconds and page notice showed `Verification email sent to qa@example.com...`. | Regression check for stuck sending popup and `{}`-style unclear feedback. |
+| TC-005 | Missing Config Is Safe | Pass | Submitting with placeholder config showed: `Add your Supabase URL and public key in config.js before sending links.` | No page errors were reported. |
+| TC-006 | Live Magic Link | Fail | Not re-run in automated QA to avoid sending another real email. | User reported the live attempt reached sending state but feedback/autoclose was poor; this commit fixes the UI handling around that response. |

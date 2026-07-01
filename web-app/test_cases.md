@@ -30,7 +30,17 @@
 
 **Expected result:** User can enter an email address.
 
-## TC-004 - Missing Config Is Safe
+## TC-004 - Join Form Success Closes Popup
+
+**Description:** After Supabase accepts the magic-link request, the popup should not stay open indefinitely.
+
+**How to test:** Mock a successful `signInWithOtp` response, submit the form, and wait 1.5 seconds.
+
+**Verification:** The popup closes and a landing-page confirmation names the email address.
+
+**Expected result:** User sees a clear confirmation without a stuck sending state.
+
+## TC-005 - Missing Config Is Safe
 
 **Description:** Placeholder Supabase config should not crash the page.
 
@@ -40,7 +50,7 @@
 
 **Expected result:** No network request is attempted and no secret is required.
 
-## TC-005 - Live Magic Link
+## TC-006 - Live Magic Link
 
 **Description:** With real Supabase public config and redirect URL, submitting the form should send a magic-link email.
 

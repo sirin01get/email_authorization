@@ -112,6 +112,23 @@ h1 {
   line-height: 1.55;
 }
 
+.page-notice {
+  width: min(520px, 100%);
+  margin: 24px 0 0;
+  border: 1px solid rgba(36, 84, 65, 0.2);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--accent-strong);
+  line-height: 1.45;
+  backdrop-filter: blur(16px);
+}
+
+.page-notice[data-tone="error"] {
+  border-color: rgba(157, 45, 37, 0.24);
+  color: #9d2d25;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

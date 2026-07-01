@@ -7,11 +7,14 @@ const elements = {
   emailInput: document.querySelector("[data-email-input]"),
   submitJoin: document.querySelector("[data-submit-join]"),
   status: document.querySelector("[data-auth-status]"),
+  pageNotice: document.querySelector("[data-page-notice]"),
   guestActions: document.querySelector("[data-guest-actions]"),
   memberPanel: document.querySelector("[data-member-panel]"),
   userEmail: document.querySelector("[data-user-email]"),
   signOut: document.querySelector("[data-sign-out]"),
 };
+
+const SEND_TIMEOUT_MS = 12000;
 
 const isConfigured =
   Boolean(config.supabaseUrl) &&
@@ -73,24 +76,42 @@ elements.joinForm?.addEventListener("submit", async (event) => {
   }
 
   setLoading(true);
+  clearPageNotice();
   setStatus("Sending your secure magic link...", "neutral");
 
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: config.magicLinkRedirectUrl || window.location.href,
-      shouldCreateUser: true,
-    },
-  });
-
-  setLoading(false);
-
-  if (error) {
-    setStatus(error.message, "error");
+  let result;
+  try {
+    result = await withTimeout(
+      supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: config.magicLinkRedirectUrl || window.location.href,
+          shouldCreateUser: true,
+        },
+      }),
+      SEND_TIMEOUT_MS
+    );
+  } catch (error) {
+    setLoading(false);
+    setStatus(readErrorMessage(error), "error");
     return;
   }
 
-  setStatus("Check your inbox. The verification link is on its way.", "success");
+  setLoading(false);
+
+  if (result?.error) {
+    setStatus(readErrorMessage(result.error), "error");
+    return;
+  }
+
+  const successMessage = `Verification email sent to ${email}. Check your inbox and open the link to continue.`;
+  setStatus(successMessage, "success");
+  setPageNotice(successMessage, "success");
+
+  window.setTimeout(() => {
+    closeJoinPanel();
+    elements.joinForm.reset();
+  }, 1200);
 });
 
 elements.signOut?.addEventListener("click", async () => {
@@ -148,6 +169,7 @@ function openJoinPanel() {
 
 function closeJoinPanel() {
   elements.joinPanel.hidden = true;
+  setLoading(false);
 }
 
 function renderSession(session) {
@@ -176,6 +198,56 @@ function setStatus(message, tone) {
     return;
   }
 
-  elements.status.textContent = message;
+  elements.status.textContent = message || "Something went wrong. Please try again.";
   elements.status.dataset.tone = tone;
+}
+
+function setPageNotice(message, tone) {
+  if (!elements.pageNotice) {
+    return;
+  }
+
+  elements.pageNotice.textContent = message;
+  elements.pageNotice.dataset.tone = tone;
+  elements.pageNotice.hidden = false;
+}
+
+function clearPageNotice() {
+  if (!elements.pageNotice) {
+    return;
+  }
+
+  elements.pageNotice.textContent = "";
+  elements.pageNotice.hidden = true;
+}
+
+function withTimeout(promise, timeoutMs) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      window.setTimeout(() => {
+        reject(new Error("Email sending is taking too long. Please try again in a moment."));
+      }, timeoutMs);
+    }),
+  ]);
+}
+
+function readErrorMessage(error) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+
+  if (error?.message) {
+    return error.message;
+  }
+
+  if (error?.error_description) {
+    return error.error_description;
+  }
+
+  return "Email could not be sent. Please check the address and try again.";
 }

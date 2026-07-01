@@ -1,5 +1,7 @@
 # Cloudflare Worker Edge Gate
 
+Cloudflare project name: `rare`.
+
 This Worker protects the prototype item creation endpoint:
 
 - Validates the Supabase access token with Supabase Auth.
@@ -69,10 +71,13 @@ npm install
 npx wrangler deploy
 ```
 
+Wrangler will deploy this Worker as `rare`, matching the `name` in
+`wrangler.jsonc`.
+
 After deploy, call:
 
 ```http
-POST https://YOUR_WORKER_URL/v1/items
+POST https://rare.YOUR_WORKERS_SUBDOMAIN.workers.dev/v1/items
 Authorization: Bearer SUPABASE_ACCESS_TOKEN
 Content-Type: application/json
 

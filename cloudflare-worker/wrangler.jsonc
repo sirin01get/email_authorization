@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "email-auth-edge-gate",
+  "name": "rare",
   "main": "src/index.js",
   "compatibility_date": "2026-07-01",
   "observability": {

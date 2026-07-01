@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Welcome to SIRINGET to RARE BUILD, a focused workspace for building rare ideas with precision."
+    />
+    <title>SIRINGET to RARE BUILD</title>
+    <link rel="icon" type="image/png" href="../../siringet_favicon.png" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./config.js"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="./app.js"></script>
+  </head>
+  <body>
+    <main class="welcome-shell">
+      <img
+        class="hero-image"
+        src="./assets/ig_0d85508a2748f119016a451ffdb38081919120c1dcda8dafbd.png"
+        alt=""
+        aria-hidden="true"
+      />
+      <section class="hero-content" aria-labelledby="welcome-title">
+        <p class="eyebrow">SIRINGET</p>
+        <h1 id="welcome-title">Welcome to RARE BUILD</h1>
+        <p class="intro">
+          A focused place to shape ideas into secure, useful, production-ready
+          systems.
+        </p>
+        <p class="page-notice" role="status" aria-live="polite" data-page-notice hidden></p>
+        <div class="actions" aria-label="Primary actions" data-guest-actions>
+          <button class="button button-primary" type="button" data-open-join>
+            Join in
+          </button>
+          <a class="button button-secondary" href="#principles">View principles</a>
+        </div>
+        <div class="member-panel" data-member-panel hidden>
+          <p class="member-kicker">Verified access</p>
+          <p class="member-copy">
+            You are signed in as <strong data-user-email></strong>.
+          </p>
+          <div class="actions actions-compact">
+            <a class="button button-primary" href="#start">Enter workspace</a>
+            <button class="button button-secondary" type="button" data-sign-out>
+              Sign out
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <section
+      class="join-panel"
+      id="join"
+      aria-labelledby="join-title"
+      data-join-panel
+      hidden
+    >
+      <div class="join-inner">
+        <button class="icon-button" type="button" aria-label="Close join form" data-close-join>
+          ×
+        </button>
+        <p class="eyebrow">Private access</p>
+        <h2 id="join-title">Join SIRINGET</h2>
+        <p>
+          Enter your email and Supabase will send a secure magic link through
+          the configured Resend SMTP channel.
+        </p>
+        <form class="join-form" data-join-form>
+          <label for="join-email">Email address</label>
+          <div class="input-row">
+            <input
+              id="join-email"
+              name="email"
+              type="email"
+              inputmode="email"
+              autocomplete="email"
+              placeholder="you@example.com"
+              required
+              data-email-input
+            />
+            <button class="button button-primary" type="submit" data-submit-join>
+              Send link
+            </button>
+          </div>
+        </form>
+        <p class="form-status" role="status" aria-live="polite" data-auth-status></p>
+      </div>
+    </section>
+
+    <section id="principles" class="principles" aria-label="Build principles">
+      <article>
+        <span>01</span>
+        <h2>Identity first</h2>
+        <p>Every action starts with a clear, verified user.</p>
+      </article>
+      <article>
+        <span>02</span>
+        <h2>Secure by default</h2>
+        <p>Access rules stay close to the data and edge.</p>
+      </article>
+      <article id="start">
+        <span>03</span>
+        <h2>Build only what proves</h2>
+        <p>Small prototypes should validate the direction without noise.</p>
+      </article>
+    </section>
+  </body>
+</html>

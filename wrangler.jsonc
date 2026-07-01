@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "rare",
+  "main": "./email_authorization/cloudflare-worker/src/index.js",
+  "compatibility_date": "2026-07-01",
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "SUPABASE_SCHEMA": "prototypes",
+    "SUPABASE_ITEMS_TABLE": "items",
+    "FREE_ITEM_LIMIT": "3",
+    "ALLOWED_ORIGIN": "*"
+  }
+}

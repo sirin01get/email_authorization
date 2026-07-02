@@ -23,26 +23,6 @@ const isConfigured =
   !config.supabaseUrl.includes("YOUR_PROJECT_REF") &&
   !config.supabaseAnonKey.includes("YOUR_SUPABASE");
 
-let supabaseClient = null;
-
-function getSupabaseClient() {
-  if (!isConfigured || !window.supabase?.createClient) {
-    return null;
-  }
-
-  if (!supabaseClient) {
-    supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey, {
-      auth: {
-        detectSessionInUrl: true,
-        persistSession: true,
-        autoRefreshToken: true,
-      },
-    });
-  }
-
-  return supabaseClient;
-}
-
 elements.openJoin?.addEventListener("click", () => {
   openJoinPanel();
 });
@@ -60,13 +40,8 @@ elements.joinPanel?.addEventListener("click", (event) => {
 elements.joinForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
 
-  const supabase = getSupabaseClient();
-
-  if (!supabase) {
-    const message = isConfigured
-      ? "Supabase client library did not load. Check the network or vendor the script."
-      : "Add your Supabase URL and public key in config.js before sending links.";
-    setStatus(message, "error");
+  if (!isConfigured) {
+    setStatus("Add your Supabase URL and public key in config.js before sending links.", "error");
     return;
   }
 
@@ -92,18 +67,7 @@ elements.joinForm?.addEventListener("submit", async (event) => {
 
   let result;
   try {
-    const sendPromise = supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: config.magicLinkRedirectUrl || window.location.href,
-        shouldCreateUser: true,
-      },
-    });
-
-    result = await withTimeout(
-      sendPromise,
-      SEND_TIMEOUT_MS
-    );
+    result = await withTimeout(sendMagicLink(email), SEND_TIMEOUT_MS);
   } catch (error) {
     window.clearTimeout(slowSendTimer);
     setLoading(false);
@@ -115,13 +79,6 @@ elements.joinForm?.addEventListener("submit", async (event) => {
 
   window.clearTimeout(slowSendTimer);
   setLoading(false);
-
-  if (result?.error) {
-    const message = readErrorMessage(result.error);
-    setStatus(message, "error");
-    setPageNotice(message, "error");
-    return;
-  }
 
   const successMessage = `Verification email sent to ${email}. Check your inbox and open the link to continue.`;
   setStatus(successMessage, "success");
@@ -135,14 +92,8 @@ elements.joinForm?.addEventListener("submit", async (event) => {
   }, 1200);
 });
 
-elements.signOut?.addEventListener("click", async () => {
-  const supabase = getSupabaseClient();
-
-  if (!supabase) {
-    return;
-  }
-
-  await supabase.auth.signOut();
+elements.signOut?.addEventListener("click", () => {
+  window.localStorage.removeItem("siringet-session");
   renderSession(null);
 });
 
@@ -155,14 +106,6 @@ window.addEventListener("load", () => {
 });
 
 async function initializeSession() {
-  const supabase = getSupabaseClient();
-  if (!supabase) {
-    if (isConfigured) {
-      setStatus("Supabase client library did not load. Check the network or vendor the script.", "error");
-    }
-    return;
-  }
-
   const url = new URL(window.location.href);
   const urlError = url.searchParams.get("error_description") || url.searchParams.get("error");
   if (urlError) {
@@ -170,15 +113,8 @@ async function initializeSession() {
     setStatus(urlError, "error");
   }
 
-  const { data } = await supabase.auth.getSession();
-  renderSession(data.session);
-
-  supabase.auth.onAuthStateChange((event, session) => {
-    renderSession(session);
-    if (event === "SIGNED_IN" && session) {
-      window.history.replaceState({}, document.title, config.magicLinkRedirectUrl || "/");
-    }
-  });
+  const session = readSessionFromUrl() || readStoredSession();
+  renderSession(session);
 }
 
 function openJoinPanel() {
@@ -212,6 +148,34 @@ function renderSession(session) {
 function setLoading(isLoading) {
   elements.submitJoin.disabled = isLoading;
   elements.submitJoin.textContent = isLoading ? "Sending..." : "Send link";
+}
+
+async function sendMagicLink(email) {
+  const redirectTo = getMagicLinkRedirectUrl();
+  const url = new URL(`${trimTrailingSlash(config.supabaseUrl)}/auth/v1/otp`);
+
+  if (redirectTo) {
+    url.searchParams.set("redirect_to", redirectTo);
+  }
+
+  const response = await fetch(url.toString(), {
+    method: "POST",
+    headers: {
+      apikey: config.supabaseAnonKey,
+      authorization: `Bearer ${config.supabaseAnonKey}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      email,
+      create_user: true,
+    }),
+  });
+
+  if (!response.ok) {
+    throw await readAuthError(response);
+  }
+
+  return true;
 }
 
 function setStatus(message, tone) {
@@ -253,6 +217,31 @@ function withTimeout(promise, timeoutMs) {
   ]);
 }
 
+async function readAuthError(response) {
+  let payload = null;
+
+  try {
+    payload = await response.json();
+  } catch {
+    try {
+      payload = await response.text();
+    } catch {
+      payload = null;
+    }
+  }
+
+  const message =
+    payload?.msg ||
+    payload?.message ||
+    payload?.error_description ||
+    payload?.error ||
+    payload ||
+    `${response.status} ${response.statusText}`;
+
+  const errorId = payload?.error_id ? ` Reference: ${payload.error_id}` : "";
+  return new Error(`${readErrorMessage(message)}${errorId}`);
+}
+
 function readErrorMessage(error) {
   if (error instanceof Error && error.message) {
     return normalizeErrorMessage(error.message);
@@ -281,5 +270,75 @@ function normalizeErrorMessage(message) {
     return "Email could not be sent. Please check the address and try again.";
   }
 
+  if (normalized === "Failed to fetch") {
+    return "The browser could not reach Supabase. Try the deployed Cloudflare page, or check network access.";
+  }
+
+  if (normalized.includes("Error sending magic link email")) {
+    return normalized.replace(
+      "Error sending magic link email",
+      "Supabase reached the email service, but the verification email could not be sent. Check the Supabase SMTP/Resend sender and domain settings."
+    );
+  }
+
   return normalized;
+}
+
+function getMagicLinkRedirectUrl() {
+  const configured = config.magicLinkRedirectUrl;
+
+  if (configured && !String(configured).startsWith("file:")) {
+    return configured;
+  }
+
+  if (window.location.protocol === "http:" || window.location.protocol === "https:") {
+    return window.location.origin + window.location.pathname;
+  }
+
+  return "";
+}
+
+function readSessionFromUrl() {
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const accessToken = hashParams.get("access_token");
+  const refreshToken = hashParams.get("refresh_token");
+
+  if (!accessToken) {
+    return null;
+  }
+
+  const user = decodeJwtPayload(accessToken);
+  const session = {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    user: {
+      email: user?.email || "",
+    },
+  };
+
+  window.localStorage.setItem("siringet-session", JSON.stringify(session));
+  window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+  return session;
+}
+
+function readStoredSession() {
+  try {
+    return JSON.parse(window.localStorage.getItem("siringet-session") || "null");
+  } catch {
+    return null;
+  }
+}
+
+function decodeJwtPayload(token) {
+  try {
+    const [, payload] = token.split(".");
+    const normalizedPayload = payload.replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(window.atob(normalizedPayload));
+  } catch {
+    return null;
+  }
+}
+
+function trimTrailingSlash(value) {
+  return value.replace(/\/+$/, "");
 }

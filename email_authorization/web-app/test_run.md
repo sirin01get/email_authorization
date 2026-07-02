@@ -35,3 +35,10 @@ Environment:
 - Reproduced the `{}` message with a mocked Supabase response `{ error: { message: "{}" } }`.
 - Verified the UI now displays `Email could not be sent. Please check the address and try again.`
 - Verified a slow successful send closes the popup after 3.5 seconds and updates the landing-page notice when the request resolves.
+
+## 2026-07-02 Email Send Verification
+
+- Submitted `anandrai@hotmail.com` through the local app.
+- The local browser could not load the external Supabase JS CDN (`net::ERR_NETWORK_ACCESS_DENIED`), so the app was changed to call Supabase Auth REST directly.
+- A direct Supabase Auth OTP request reached Supabase, but Supabase returned `500 unexpected_failure` with message `Error sending magic link email` and error id `019f202d-f7c1-7d7e-9444-cffb952cb1f4`.
+- The UI now reports this as a Supabase SMTP/Resend sender/domain configuration issue and includes the reference id when Supabase returns one.

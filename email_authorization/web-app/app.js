@@ -274,9 +274,12 @@ function normalizeErrorMessage(message) {
     return "The browser could not reach Supabase. Try the deployed Cloudflare page, or check network access.";
   }
 
-  if (normalized.includes("Error sending magic link email")) {
+  if (
+    normalized.includes("Error sending magic link email") ||
+    normalized.includes("Error sending confirmation email")
+  ) {
     return normalized.replace(
-      "Error sending magic link email",
+      /Error sending (magic link|confirmation) email/,
       "Supabase reached the email service, but the verification email could not be sent. Check the Supabase SMTP/Resend sender and domain settings."
     );
   }
